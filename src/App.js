@@ -125,7 +125,7 @@ const ShoppingCard = ({product}) => {
   );
 };
 
-const ShoppingCart = ({items}) => {
+const ShoppingCart = ({items, closeSidebar}) => {
   var totalCost = 0;
   for (var i = 0; i < items.length; i++){
     totalCost += Math.round(items[i].quantity * items[i].price * 100);
@@ -133,7 +133,14 @@ const ShoppingCart = ({items}) => {
   totalCost /= 100;
   return (
     <React.Fragment>
-      <Title>Shopping Cart Items:</Title>
+      <Column.Group>
+        <Column>
+          <Title>Shopping Cart Items:</Title>
+        </Column>
+        <Column size="one-fifth">
+          <Button onClick={closeSidebar}>Close</Button>
+        </Column>
+      </Column.Group>
       {items.map(product => <ShoppingCard product={product}></ShoppingCard>)}
       <Title>{'Total Cost: $' + totalCost}</Title>
     </React.Fragment>
@@ -163,7 +170,7 @@ const App = () => {
   return (
     <React.Fragment>
       <Sidebar 
-        sidebar={<ShoppingCart items={cartproducts}/>}
+        sidebar={<ShoppingCart items={cartproducts} closeSidebar={() => setSidebarOpen(false)}/>}
         open={sidebarOpen}
         onSetOpen={(open) => setSidebarOpen(open)}
         styles={{ sidebar: { background: "white" } }}>

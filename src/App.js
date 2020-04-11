@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import 'rbx/index.css';
 import { Button, Container, Title, Column, Card, Content} from 'rbx';
+import Sidebar from 'react-sidebar';
 
 const ProductCard = ({product}) => {
 
@@ -81,20 +82,95 @@ const ProductsGrid = ({products}) => {
 
 }
 
+const ShoppingCard = ({product}) => {
+
+  var filepath = "data/products/" + product.sku + "_1.jpg";
+  var productPrice = product.price.toString();
+  if (productPrice.indexOf('.') >= 0){
+    if (productPrice.substring(productPrice.indexOf('.') + 1). length < 2){
+      productPrice += '0';
+    }
+  }
+
+  return ( <Column><Card>
+  <Card.Header>
+    <Card.Header.Title>{product.title}</Card.Header.Title>
+  </Card.Header>
+  <Card.Content>
+    <Content>
+      <Column.Group>
+      <Column size="one-third">
+      <img src={filepath} width="75"/>
+      </Column>
+      <Column>
+      <h5>{'$' + productPrice}</h5>
+      <p>{product.description + '; ' + product.style}</p>
+      </Column>
+      </Column.Group>
+    </Content>
+  </Card.Content>
+  <Card.Footer>
+  <Card.Footer.Item as="p">
+        {'Quantity: ' + product.quantity}
+    </Card.Footer.Item>
+    <Card.Footer.Item as="a" href="#">
+      +
+    </Card.Footer.Item>
+    <Card.Footer.Item as="a" href="#">
+      -
+    </Card.Footer.Item>
+
+  </Card.Footer>
+</Card></Column>
+  );
+};
+
+const ShoppingCart = ({items}) => {
+  var totalCost = 0;
+  for (var i = 0; i < items.length; i++){
+    totalCost += Math.round(items[i].quantity * items[i].price * 100);
+  }
+  totalCost /= 100;
+  return (
+    <React.Fragment>
+      <Title>Shopping Cart Items:</Title>
+      {items.map(product => <ShoppingCard product={product}></ShoppingCard>)}
+      <Title>{'Total Cost: $' + totalCost}</Title>
+    </React.Fragment>
+  );
+}
+
 const App = () => {
   const [data, setData] = useState({});
+  const [cartItems, setCartItems] = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const products = Object.values(data);
+  const cartproducts = Object.values(cartItems);
+  
   useEffect(() => {
     const fetchProducts = async () => {
       const response = await fetch('./data/products.json');
       const json = await response.json();
       setData(json);
+      const response2 = await fetch('./data/cartproducts.json');
+      const json2 = await response2.json();
+      setCartItems(json2);
     };
     fetchProducts();
+    
   }, []);
 
   return (
-    <ProductsGrid products = {products}/>
+    <React.Fragment>
+      <Sidebar 
+        sidebar={<ShoppingCart items={cartproducts}/>}
+        open={sidebarOpen}
+        onSetOpen={(open) => setSidebarOpen(open)}
+        styles={{ sidebar: { background: "white" } }}>
+      <Button onClick={() => setSidebarOpen(!sidebarOpen)}>ShoppingCart</Button>
+      <ProductsGrid products = {products}/>
+      </Sidebar>
+    </React.Fragment>
   );
 };
 

@@ -2,6 +2,24 @@ import React, { useEffect, useState } from 'react';
 import 'rbx/index.css';
 import { Button, Container, Title, Column, Card, Content} from 'rbx';
 import Sidebar from 'react-sidebar';
+import firebase from 'firebase/app';
+import 'firebase/database';
+import 'firebase/auth';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCGC5h8SqSKx_5JIOR6GdHQJQiQqm3w6rA",
+  authDomain: "new-shopping-cart-65e28.firebaseapp.com",
+  databaseURL: "https://new-shopping-cart-65e28.firebaseio.com",
+  projectId: "new-shopping-cart-65e28",
+  storageBucket: "new-shopping-cart-65e28.appspot.com",
+  messagingSenderId: "377243796977",
+  appId: "1:377243796977:web:1400dbda6325a994a6b050"
+};
+  
+  firebase.initializeApp(firebaseConfig);
+
+  const db = firebase.database().ref();
+
 
 const ProductCard = ({product, addToCart, openSidebar, inventory}) => {
 
@@ -102,7 +120,7 @@ const ProductsGrid = ({products, addToCart, openSidebar, inventory}) => {
 
 }
 
-const ShoppingCard = ({product, addToCart, removeFromCart}) => {
+const ShoppingCard = ({product, addToCart, removeFromCart, inventory}) => {
 
   var filepath = "data/products/" + product.sku + "_1.jpg";
   var productPrice = product.price.toString();
@@ -134,9 +152,12 @@ const ShoppingCard = ({product, addToCart, removeFromCart}) => {
   <Card.Footer.Item as="p">
         {'Quantity: ' + product.quantity}
     </Card.Footer.Item>
-    <Card.Footer.Item as="a" onClick={() => {addToCart(product);}}>
+    {inventory[product.sku][product.size] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(product);}}>
       +
-    </Card.Footer.Item>
+    </Card.Footer.Item>:
+    <Card.Footer.Item as="p">
+    Out of Stock
+  </Card.Footer.Item>}
     <Card.Footer.Item as="a" onClick={() => {removeFromCart(product);}}>
       -
     </Card.Footer.Item>
@@ -146,7 +167,7 @@ const ShoppingCard = ({product, addToCart, removeFromCart}) => {
   );
 };
 
-const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart}) => {
+const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventory}) => {
   var totalCost = 0;
   for (var i = 0; i < items.length; i++){
     totalCost += Math.round(items[i].quantity * items[i].price * 100);
@@ -162,7 +183,7 @@ const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart}) => {
           <Button onClick={closeSidebar}>Close</Button>
         </Column>
       </Column.Group>
-      {items.map(product => <ShoppingCard product={product} addToCart={addToCart} removeFromCart={removeFromCart}></ShoppingCard>)}
+      {items.map(product => <ShoppingCard product={product} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory}></ShoppingCard>)}
       <Title>{'Total Cost: $' + totalCost}</Title>
     </React.Fragment>
   );
@@ -225,12 +246,16 @@ const App = () => {
       const response = await fetch('./data/products.json');
       const json = await response.json();
       setData(json);
-      const responseI = await fetch('./data/inventory.json');
-      const jsonI = await responseI.json();
-      setInventory(jsonI);
+      
     };
     fetchProducts();
-    
+    const handleData = snap => {
+      if (snap.val()){
+        setInventory(snap.val());
+      }
+    };
+    db.on('value', handleData, error => alert(error));
+    return () => { db.off('value', handleData); };
   }, []);
 
   return (

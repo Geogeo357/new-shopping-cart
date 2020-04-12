@@ -3,7 +3,7 @@ import 'rbx/index.css';
 import { Button, Container, Title, Column, Card, Content} from 'rbx';
 import Sidebar from 'react-sidebar';
 
-const ProductCard = ({product, addToCart, openSidebar}) => {
+const ProductCard = ({product, addToCart, openSidebar, inventory}) => {
 
   var filepath = "data/products/" + product.sku + "_1.jpg";
   var productPrice = product.price.toString();
@@ -22,29 +22,49 @@ const ProductCard = ({product, addToCart, openSidebar}) => {
       <Title align="center">{'$' + productPrice}</Title>
       <h4 align="center">{product.style ? product.style : <br/>}</h4>
       <h4 align="center">{product.description ? product.description :<br/>}</h4>
-    <img src={filepath} height="375"/>
+    <img src={filepath} width="273"/>
     </Content>
   </Card.Content>
   <Card.Footer>
-    <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"Small"}));openSidebar();}}>
+    {
+      inventory[product.sku]? (inventory[product.sku]['S'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"S"}));openSidebar();}}>
       S
-    </Card.Footer.Item>
-    <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"Medium"}));openSidebar();}}>
+    </Card.Footer.Item>:
+    <Card.Footer.Item as="p">
+    Out of Stock
+  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+    }
+    {
+      inventory[product.sku]? (inventory[product.sku]['M'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"M"}));openSidebar();}}>
       M
-    </Card.Footer.Item>
-    <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"Large"}));openSidebar();}}>
+    </Card.Footer.Item>:
+    <Card.Footer.Item as="p">
+    Out of Stock
+  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+    }
+    {
+      inventory[product.sku]? (inventory[product.sku]['L'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"L"}));openSidebar();}}>
       L
-    </Card.Footer.Item>
-    <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"Extra Large"}));openSidebar();}}>
+    </Card.Footer.Item>:
+    <Card.Footer.Item as="p">
+    Out of Stock
+  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+    }
+    {
+      inventory[product.sku]? (inventory[product.sku]['XL'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"XL"}));openSidebar();}}>
       XL
-    </Card.Footer.Item>
+    </Card.Footer.Item>:
+    <Card.Footer.Item as="p">
+    Out of Stock
+  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+    }
 
   </Card.Footer>
 </Card></Column>
 );
 }
 
-const ProductsGrid = ({products, addToCart, openSidebar}) => {
+const ProductsGrid = ({products, addToCart, openSidebar, inventory}) => {
   var col1Prods = [];
   var col2Prods = [];
   var col3Prods = [];
@@ -66,16 +86,16 @@ const ProductsGrid = ({products, addToCart, openSidebar}) => {
   return (
   <Column.Group>
     <Column>
-      {col1Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar}></ProductCard>)}
+      {col1Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} ></ProductCard>)}
     </Column>
       <Column>
-      {col2Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar}></ProductCard>)}
+      {col2Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} ></ProductCard>)}
     </Column>
       <Column>
-      {col3Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar}></ProductCard>)}
+      {col3Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory}></ProductCard>)}
     </Column>
       <Column>
-      {col4Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar}></ProductCard>)}
+      {col4Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory}></ProductCard>)}
     </Column>
   </Column.Group>
   );
@@ -150,11 +170,18 @@ const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart}) => {
 
 const App = () => {
   const [data, setData] = useState({});
+  const [inventoryJSON, setInventory] = useState({});
   const [cartItems, setCartItems] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const products = Object.values(data);
   var cartproducts = Object.values(cartItems);
-  
+  var inventory = {};
+  var inventoryKeys = Object.keys(inventoryJSON);
+  for(var i = 0; i < inventoryKeys.length; i++){
+    // jsonI[inventoryKeys[i]]['sku'] = inventoryKeys[i];
+    inventory[inventoryKeys[i]] = inventoryJSON[inventoryKeys[i]];
+  } 
+
   const addToCart = (newProd) => {
     var newCartItems = [];
     var done = false;
@@ -171,6 +198,8 @@ const App = () => {
         cartproducts.push(newProd);
         newCartItems = cartproducts;
       }
+      inventory[newProd.sku][newProd.size]--;
+      setInventory(inventory);
     setCartItems(newCartItems);
   };
 
@@ -186,6 +215,8 @@ const App = () => {
           }
         }
       }
+      inventory[newProd.sku][newProd.size]++;
+      setInventory(inventory);
     setCartItems(newCartItems);
   };
 
@@ -194,6 +225,9 @@ const App = () => {
       const response = await fetch('./data/products.json');
       const json = await response.json();
       setData(json);
+      const responseI = await fetch('./data/inventory.json');
+      const jsonI = await responseI.json();
+      setInventory(jsonI);
     };
     fetchProducts();
     
@@ -202,12 +236,12 @@ const App = () => {
   return (
     <React.Fragment>
       <Sidebar 
-        sidebar={<ShoppingCart items={cartproducts} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart}/>}
+        sidebar={<ShoppingCart items={cartproducts} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />}
         open={sidebarOpen}
         onSetOpen={(open) => setSidebarOpen(open)}
         styles={{ sidebar: { background: "white" } }}>
       <Button onClick={() => setSidebarOpen(!sidebarOpen)}>ShoppingCart</Button>
-      <ProductsGrid products = {products} addToCart={addToCart} openSidebar={() => setSidebarOpen(true)}/>
+      <ProductsGrid products={products} addToCart={addToCart} openSidebar={() => setSidebarOpen(true)} inventory={inventory} />
       </Sidebar>
     </React.Fragment>
   );

@@ -1,6 +1,7 @@
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import React, { useEffect, useState } from 'react';
 import 'rbx/index.css';
-import { Button, Container, Title, Column, Card, Content} from 'rbx';
+import { Button, Container, Title, Column, Card, Content, Message} from 'rbx';
 import Sidebar from 'react-sidebar';
 import firebase from 'firebase/app';
 import 'firebase/database';
@@ -19,6 +20,42 @@ const firebaseConfig = {
   firebase.initializeApp(firebaseConfig);
 
   const db = firebase.database().ref();
+
+  
+const uiConfig = {
+  signInFlow: 'popup',
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+  ],
+  callbacks: {
+    signInSuccessWithAuthResult: () => false
+  }
+};
+
+const Welcome = ({ user }) => (
+  <Message color="info">
+    <Message.Header>
+      Welcome, {user.displayName}
+      <Button primary onClick={() => firebase.auth().signOut()}>
+        Log out
+      </Button>
+    </Message.Header>
+  </Message>
+);
+
+const SignIn = () => (
+  <StyledFirebaseAuth
+    uiConfig={uiConfig}
+    firebaseAuth={firebase.auth()}
+  />
+);
+
+const Banner = ({ user, title }) => (
+  <React.Fragment>
+    { user ? <Welcome user={ user } /> : <SignIn /> }
+    <Title>{ title || '[loading...]' }</Title>
+  </React.Fragment>
+);
 
 
 const ProductCard = ({product, addToCart, openSidebar, inventory}) => {
@@ -190,6 +227,7 @@ const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventor
 }
 
 const App = () => {
+  const [user, setUser] = useState(null);
   const [data, setData] = useState({});
   const [inventoryJSON, setInventory] = useState({});
   const [cartItems, setCartItems] = useState({});
@@ -258,13 +296,22 @@ const App = () => {
     return () => { db.off('value', handleData); };
   }, []);
 
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged(setUser);
+  }, []);
+
   return (
     <React.Fragment>
       <Sidebar 
-        sidebar={<ShoppingCart items={cartproducts} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />}
+        sidebar={
+          <React.Fragment>
+          <ShoppingCart items={cartproducts} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />
+          </React.Fragment>
+      }
         open={sidebarOpen}
         onSetOpen={(open) => setSidebarOpen(open)}
         styles={{ sidebar: { background: "white" } }}>
+          <Banner title="Our Awesome Shopping App" user={ user } />
       <Button onClick={() => setSidebarOpen(!sidebarOpen)}>ShoppingCart</Button>
       <ProductsGrid products={products} addToCart={addToCart} openSidebar={() => setSidebarOpen(true)} inventory={inventory} />
       </Sidebar>

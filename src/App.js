@@ -57,8 +57,19 @@ const Banner = ({ user, title }) => (
   </React.Fragment>
 );
 
+const CheckRemainingAmount = (product, cartproducts, inventory) => {
+  var inventoryNum = inventory[product.sku] ? (inventory[product.sku][product.size]? inventory[product.sku][product.size] : 0) : 0;
+  var purchasedNum = 0;
+  for (var i = 0; i < cartproducts.length; i++){
+    if (cartproducts[i].sku == product.sku && cartproducts[i].size == product.size){
+      purchasedNum = cartproducts[i].quantity;
+    }
+  }
+  return inventoryNum - purchasedNum;
+}
 
-const ProductCard = ({product, addToCart, openSidebar, inventory}) => {
+
+const ProductCard = ({product, addToCart, openSidebar, inventory, cartproducts}) => {
 
   var filepath = "data/products/" + product.sku + "_1.jpg";
   var productPrice = product.price.toString();
@@ -82,36 +93,36 @@ const ProductCard = ({product, addToCart, openSidebar, inventory}) => {
   </Card.Content>
   <Card.Footer>
     {
-      inventory[product.sku]? (inventory[product.sku]['S'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"S"}));openSidebar();}}>
+      CheckRemainingAmount(Object.assign({}, {...product, "size":"S"}), cartproducts, inventory) > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"S"}));openSidebar();}}>
       S
     </Card.Footer.Item>:
     <Card.Footer.Item as="p">
     Out of Stock
-  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+  </Card.Footer.Item>
     }
     {
-      inventory[product.sku]? (inventory[product.sku]['M'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"M"}));openSidebar();}}>
+      CheckRemainingAmount(Object.assign({}, {...product, "size":"M"}), cartproducts, inventory) > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"M"}));openSidebar();}}>
       M
     </Card.Footer.Item>:
     <Card.Footer.Item as="p">
     Out of Stock
-  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+  </Card.Footer.Item>
     }
     {
-      inventory[product.sku]? (inventory[product.sku]['L'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"L"}));openSidebar();}}>
+      CheckRemainingAmount(Object.assign({}, {...product, "size":"L"}), cartproducts, inventory) > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"L"}));openSidebar();}}>
       L
     </Card.Footer.Item>:
     <Card.Footer.Item as="p">
     Out of Stock
-  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+  </Card.Footer.Item>
     }
     {
-      inventory[product.sku]? (inventory[product.sku]['XL'] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"XL"}));openSidebar();}}>
+      CheckRemainingAmount(Object.assign({}, {...product, "size":"XL"}), cartproducts, inventory) > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(Object.assign({}, {...product, "size":"XL"}));openSidebar();}}>
       XL
     </Card.Footer.Item>:
     <Card.Footer.Item as="p">
     Out of Stock
-  </Card.Footer.Item>) : <React.Fragment></React.Fragment>
+  </Card.Footer.Item>
     }
 
   </Card.Footer>
@@ -119,7 +130,7 @@ const ProductCard = ({product, addToCart, openSidebar, inventory}) => {
 );
 }
 
-const ProductsGrid = ({products, addToCart, openSidebar, inventory}) => {
+const ProductsGrid = ({products, addToCart, openSidebar, inventory, cartproducts}) => {
   var col1Prods = [];
   var col2Prods = [];
   var col3Prods = [];
@@ -141,23 +152,23 @@ const ProductsGrid = ({products, addToCart, openSidebar, inventory}) => {
   return (
   <Column.Group>
     <Column>
-      {col1Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} ></ProductCard>)}
+      {col1Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} cartproducts={cartproducts}></ProductCard>)}
     </Column>
       <Column>
-      {col2Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} ></ProductCard>)}
+      {col2Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} cartproducts={cartproducts}></ProductCard>)}
     </Column>
       <Column>
-      {col3Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory}></ProductCard>)}
+      {col3Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} cartproducts={cartproducts}></ProductCard>)}
     </Column>
       <Column>
-      {col4Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory}></ProductCard>)}
+      {col4Prods.map(product => <ProductCard product={product} addToCart={addToCart} openSidebar={openSidebar} inventory={inventory} cartproducts={cartproducts}></ProductCard>)}
     </Column>
   </Column.Group>
   );
 
 }
 
-const ShoppingCard = ({product, addToCart, removeFromCart, inventory}) => {
+const ShoppingCard = ({product, addToCart, removeFromCart, inventory, cartproducts, setUpdateCart}) => {
 
   var filepath = "data/products/" + product.sku + "_1.jpg";
   var productPrice = product.price.toString();
@@ -167,6 +178,11 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory}) => {
     }
   }
 
+  var inventoryNum = inventory[product.sku] ? (inventory[product.sku][product.size]? inventory[product.sku][product.size] : 0) : 0;
+  
+  if(CheckRemainingAmount(product, cartproducts, inventory) < 0){
+    setUpdateCart(true);
+  }
   return ( <Column><Card>
   <Card.Header>
     <Card.Header.Title>{product.title}</Card.Header.Title>
@@ -181,6 +197,8 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory}) => {
       <h5>{'$' + productPrice}</h5>
       <p>{product.description + '; ' + product.style}</p>
       <p>{'Size: ' + product.size}</p>
+      {CheckRemainingAmount(product, cartproducts, inventory) < 0 ? 
+      <p>{"Only " + inventoryNum + " left in stock!" }</p>: <React.Fragment></React.Fragment>}
       </Column>
       </Column.Group>
     </Content>
@@ -189,11 +207,11 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory}) => {
   <Card.Footer.Item as="p">
         {'Quantity: ' + product.quantity}
     </Card.Footer.Item>
-    {inventory[product.sku][product.size] > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(product);}}>
+    {CheckRemainingAmount(product, cartproducts, inventory) > 0 ? <Card.Footer.Item as="a" onClick={() => {addToCart(product);}}>
       +
     </Card.Footer.Item>:
     <Card.Footer.Item as="p">
-    Out of Stock
+    No More in Stock
   </Card.Footer.Item>}
     <Card.Footer.Item as="a" onClick={() => {removeFromCart(product);}}>
       -
@@ -205,11 +223,21 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory}) => {
 };
 
 const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventory}) => {
+  const [updateCart, setUpdateCart] = useState(false);
   var totalCost = 0;
   for (var i = 0; i < items.length; i++){
     totalCost += Math.round(items[i].quantity * items[i].price * 100);
   }
   totalCost /= 100;
+
+  const UpdateCartAmounts = () => {
+    for (var i = 0; i < items.length; i++){
+      while(CheckRemainingAmount(items[i], items, inventory) < 0){
+        removeFromCart(items[i]);
+      }
+    }
+  }
+
   return (
     <React.Fragment>
       <Column.Group>
@@ -220,8 +248,9 @@ const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventor
           <Button onClick={closeSidebar}>Close</Button>
         </Column>
       </Column.Group>
-      {items.map(product => <ShoppingCard product={product} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory}></ShoppingCard>)}
+      {items.map(product => <ShoppingCard product={product} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} cartproducts={items} setUpdateCart={setUpdateCart}></ShoppingCard>)}
       <Title>{'Total Cost: $' + totalCost}</Title>
+      {updateCart ? <Button onClick={UpdateCartAmounts}>Update Cart</Button> : <Button>Check Out</Button>}
     </React.Fragment>
   );
 }
@@ -241,42 +270,83 @@ const App = () => {
     inventory[inventoryKeys[i]] = inventoryJSON[inventoryKeys[i]];
   } 
 
-  const addToCart = (newProd) => {
-    var newCartItems = [];
+const userUpdateFunc = (user) => {
+  if(user){
+    const db2 = firebase.database().ref('cart/' + user.uid);
+    const handleData2 = snap => {
+      if(snap.val()){
+    // setCartItems(snap.val());
+        var i = 0;
+        for (i = 0; i < snap.val().length-1; i++){
+          var amount = snap.val()[i]['quantity'];
+          console.log('hm' + i + " " + amount);
+          addToCart(snap.val()[i], amount, false);
+          // while (amount >= 1){
+          //   // alert('amount uno: ' + amount);
+          //   amount --;
+          //   addToCart(snap.val()[i]);
+          // }
+        }
+        var amount = snap.val()[i]['quantity'];
+        addToCart(snap.val()[i], amount, true);
+        db2.off('value', handleData2);
+      }
+    }
+
+    
+    db2.on('value', handleData2, error => alert(error));
+  }
+  setUser(user);
+}
+
+  const addToCart = (newProd, additional = 1, updateDB = true) => {
     var done = false;
       for(var i = 0; i < cartproducts.length; i++){
         var y = cartproducts[i];
-        if(y.sku == newProd.sku && y.size == newProd.size){
-          y.quantity = y.quantity + 1;
+        if(y.sku.toString() == newProd.sku.toString() && y.size.toString() == newProd.size.toString()){
+          // alert(y.quantity)
+          console.log(y.size + " at " + y.quantity);
+          y.quantity = y.quantity + additional;
+          // alert(y.quantity)
+          console.log(y.size + " to " + y.quantity);
           done = true;
         }
-        newCartItems.push(y);
       }
       if(!done){
-        newProd.quantity = 1;
+        newProd.quantity = additional;
         cartproducts.push(newProd);
-        newCartItems = cartproducts;
       }
-      inventory[newProd.sku][newProd.size]--;
-      setInventory(inventory);
-    setCartItems(newCartItems);
+    setCartItems(cartproducts);
+    if(user && updateDB){
+      var cartItems= cartproducts;
+      db.child('cart').child(user.uid).remove();
+      db.child('cart').child(user.uid).update({...cartItems})
+    .catch(error => alert(error));
+    }
   };
 
   const removeFromCart = (newProd) => {
-    var newCartItems = [];
     var done = false;
       for(var i = 0; i < cartproducts.length; i++){
         var y = cartproducts[i];
         if(y.sku == newProd.sku && y.size == newProd.size){
           if(y.quantity > 1){
             y.quantity = y.quantity - 1;
-            newCartItems.push(y);
+          } else{
+            cartproducts = cartproducts.filter((v) => v !== y);
           }
         }
       }
-      inventory[newProd.sku][newProd.size]++;
-      setInventory(inventory);
-    setCartItems(newCartItems);
+      
+      // inventory[newProd.sku][newProd.size]++;
+      // setInventory(inventory);
+    setCartItems(cartproducts);
+    if(user){
+      var cartItems= cartproducts;
+      db.child('cart').child(user.uid).remove();
+      db.child('cart').child(user.uid).update({...cartproducts})
+    .catch(error => alert(error));
+    }
   };
 
   useEffect(() => {
@@ -294,10 +364,11 @@ const App = () => {
     };
     db.on('value', handleData, error => alert(error));
     return () => { db.off('value', handleData); };
+
   }, []);
 
   useEffect(() => {
-    firebase.auth().onAuthStateChanged(setUser);
+    firebase.auth().onAuthStateChanged(userUpdateFunc);
   }, []);
 
   return (
@@ -313,7 +384,7 @@ const App = () => {
         styles={{ sidebar: { background: "white" } }}>
           <Banner title="Our Awesome Shopping App" user={ user } />
       <Button onClick={() => setSidebarOpen(!sidebarOpen)}>ShoppingCart</Button>
-      <ProductsGrid products={products} addToCart={addToCart} openSidebar={() => setSidebarOpen(true)} inventory={inventory} />
+      <ProductsGrid products={products} addToCart={addToCart} openSidebar={() => setSidebarOpen(true)} inventory={inventory} cartproducts={cartproducts} />
       </Sidebar>
     </React.Fragment>
   );

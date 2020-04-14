@@ -226,7 +226,7 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory, cartproduc
   );
 };
 
-const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventory, setCartItems}) => {
+const ShoppingCart = ({user, items, closeSidebar,  addToCart, removeFromCart, inventory, setCartItems}) => {
   const [updateCart, setUpdateCart] = useState(false);
   var totalCost = 0;
   for (var i = 0; i < items.length; i++){
@@ -252,24 +252,46 @@ const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventor
       for (var i = 0; i < items.length; i++){
         if(items[i].quantity <= currData[items[i].sku][items[i].size]){
           currData[items[i].sku][items[i].size] -= items[i].quantity;
+          // var j = items[i].quantity;
+          // while(j > 0){
+          //   removeFromCart(items[i]);
+          //   j--;
+          // }
         } else {
           transactionFailed = true;
         }
       }
       if(transactionFailed){
-        alert('Purchase failed; not enough items in stock');
+        alert('Purchase failed; not enough items in stock.');
         return;
       } else {
         setCartItems({});
         return currData;
+      }
+    }, function(error, committed, snapshot) {
+      if (error) {
+        console.log('Transaction failed abnormally!', error);
+      } else if (!committed) {
+        console.log('Purchase failed; not enough items in stock.');
+      } else {
+        console.log('Purchased!');
+      }
+      if(user){
+        db.child('cart').child(user.uid).remove();
       }
     });
   };
 
   const UpdateCartAmounts = () => {
     for (var i = 0; i < items.length; i++){
-      while(CheckRemainingAmount(items[i], items, inventory) < 0){
-        removeFromCart(items[i]);
+      var currProd = items[i];
+      while(CheckRemainingAmount(currProd, items, inventory) < 0 && currProd.quantity > 0){
+        // alert(currProd.quantity);
+        // // alert(CheckRemainingAmount(currProd, items, inventory));
+        // if(currProd.quantity == 1){
+        //   i = 0;
+        // }
+        removeFromCart(currProd);
       }
     }
   }
@@ -369,7 +391,8 @@ const userUpdateFunc = (user) => {
           if(y.quantity > 1){
             y.quantity = y.quantity - 1;
           } else{
-            cartproducts = cartproducts.filter((v) => v !== y);
+            y.quantity = y.quantity - 1;
+            cartproducts = cartproducts.filter((v) => v != y);
           }
         }
       }
@@ -412,7 +435,7 @@ const userUpdateFunc = (user) => {
       <Sidebar 
         sidebar={
           <React.Fragment>
-          <ShoppingCart items={cartproducts} setCartItems={setCartItems} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />
+          <ShoppingCart user={user} items={cartproducts} setCartItems={setCartItems} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />
           </React.Fragment>
       }
         open={sidebarOpen}

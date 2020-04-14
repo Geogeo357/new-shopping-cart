@@ -180,9 +180,13 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory, cartproduc
 
   var inventoryNum = inventory[product.sku] ? (inventory[product.sku][product.size]? inventory[product.sku][product.size] : 0) : 0;
   
-  if(CheckRemainingAmount(product, cartproducts, inventory) < 0){
-    setUpdateCart(true);
-  }
+
+  // useEffect(() => {
+  //   if(CheckRemainingAmount(product, cartproducts, inventory) < 0){
+  //     setUpdateCart(true);
+  //   }
+  // }, [product]);
+
   return ( <Column><Card>
   <Card.Header>
     <Card.Header.Title>{product.title}</Card.Header.Title>
@@ -222,13 +226,45 @@ const ShoppingCard = ({product, addToCart, removeFromCart, inventory, cartproduc
   );
 };
 
-const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventory}) => {
+const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventory, setCartItems}) => {
   const [updateCart, setUpdateCart] = useState(false);
   var totalCost = 0;
   for (var i = 0; i < items.length; i++){
     totalCost += Math.round(items[i].quantity * items[i].price * 100);
   }
   totalCost /= 100;
+
+  useEffect(() => {
+    var needToUpdateCart= false;
+    for (var i = 0; i < items.length; i++){
+      var product = items[i];
+      if(CheckRemainingAmount(product, items, inventory) < 0){
+        needToUpdateCart = true;
+      }
+    }
+    setUpdateCart(needToUpdateCart);
+  }, [items]);
+
+  const checkout = () => {
+    var databaseInventory = firebase.database().ref();
+    databaseInventory.transaction(function (currData){
+      var transactionFailed = false;
+      for (var i = 0; i < items.length; i++){
+        if(items[i].quantity <= currData[items[i].sku][items[i].size]){
+          currData[items[i].sku][items[i].size] -= items[i].quantity;
+        } else {
+          transactionFailed = true;
+        }
+      }
+      if(transactionFailed){
+        alert('Purchase failed; not enough items in stock');
+        return;
+      } else {
+        setCartItems({});
+        return currData;
+      }
+    });
+  };
 
   const UpdateCartAmounts = () => {
     for (var i = 0; i < items.length; i++){
@@ -250,7 +286,7 @@ const ShoppingCart = ({items, closeSidebar,  addToCart, removeFromCart, inventor
       </Column.Group>
       {items.map(product => <ShoppingCard product={product} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} cartproducts={items} setUpdateCart={setUpdateCart}></ShoppingCard>)}
       <Title>{'Total Cost: $' + totalCost}</Title>
-      {updateCart ? <Button onClick={UpdateCartAmounts}>Update Cart</Button> : <Button>Check Out</Button>}
+      {updateCart ? <Button onClick={UpdateCartAmounts}>Update Cart</Button> : <Button onClick={checkout}>Check Out</Button>}
     </React.Fragment>
   );
 }
@@ -376,7 +412,7 @@ const userUpdateFunc = (user) => {
       <Sidebar 
         sidebar={
           <React.Fragment>
-          <ShoppingCart items={cartproducts} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />
+          <ShoppingCart items={cartproducts} setCartItems={setCartItems} closeSidebar={() => setSidebarOpen(false)} addToCart={addToCart} removeFromCart={removeFromCart} inventory={inventory} />
           </React.Fragment>
       }
         open={sidebarOpen}
